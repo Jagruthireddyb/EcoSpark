@@ -63,11 +63,13 @@ const TopNav = () => {
                 key={link.name}
                 to={link.path}
                 style={{
+                  display: 'inline-block',
                   color: isActive ? 'var(--primary-forest)' : 'var(--text-muted)',
                   fontWeight: isActive ? 600 : 500,
                   fontSize: '0.95rem',
                   position: 'relative',
-                  paddingBottom: '4px'
+                  padding: '8px 4px',
+                  pointerEvents: 'auto'
                 }}
               >
                 {link.name}

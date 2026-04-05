@@ -7,6 +7,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html'
+      },
       manifest: {
         name: 'EcoSpark Platform',
         short_name: 'EcoSpark',
@@ -14,6 +20,8 @@ export default defineConfig({
         theme_color: '#1B5E20',
         background_color: '#0a0a0a',
         display: 'standalone',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
             src: '/icon.png',

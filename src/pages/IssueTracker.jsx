@@ -1,23 +1,38 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useState } from 'react';
+import { GoogleMap, useJsApiLoader, MarkerF, InfoWindowF } from '@react-google-maps/api';
 import { useIssues } from '../context/IssuesContext';
 import { useAuth } from '../context/AuthContext';
 
-// Fix for default Leaflet icon issue in React
-import L from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
+const containerStyle = {
+  width: '100%',
+  height: '100%'
+};
+
+// Default center (New Delhi)
+const defaultCenter = {
+  lat: 28.6139,
+  lng: 77.2090
+};
 
 const IssueTracker = () => {
   const { issues, verifyIssue } = useIssues();
   const { user } = useAuth();
+  
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: "AIzaSyCBt-AhXTNFnNuNkxT_8_Bp14n8IirlCb8"
+  });
+
+  const [selectedIssue, setSelectedIssue] = useState(null);
+
+  let dynamicCenter = defaultCenter;
+  if (issues && issues.length > 0 && issues[0].location && !isNaN(issues[0].location.lat) && !isNaN(issues[0].location.lng)) {
+    // Center map on the most recent issue accurately even if lat/lng are stored as strings
+    dynamicCenter = { 
+      lat: Number(issues[0].location.lat), 
+      lng: Number(issues[0].location.lng) 
+    };
+  }
   
   const handleVerify = (id) => {
     if (!user) return alert('Must log in to verify');
@@ -35,21 +50,38 @@ const IssueTracker = () => {
         {/* Map View */}
         <div className="glass-panel" style={{ flex: 2, minWidth: '400px', padding: '10px', background: '#fff', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden' }}>
-            <MapContainer center={[28.6139, 77.2090]} zoom={16} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {issues.map(issue => (
-                <Marker key={issue.id} position={[issue.location.lat, issue.location.lng]}>
-                  <Popup>
-                    <strong>{issue.title}</strong><br />
-                    Status: {issue.status}<br />
-                    <img src={issue.image} alt="Report" style={{ width: '100px', height: 'auto', marginTop: '5px', borderRadius: '4px' }} />
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+            {isLoaded ? (
+              <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={dynamicCenter}
+                zoom={14}
+              >
+                {issues.map(issue => {
+                  if (!issue || !issue.location || isNaN(issue.location.lat) || isNaN(issue.location.lng)) {
+                    return null; // Skip corrupted location data gracefully
+                  }
+                  return (
+                    <MarkerF 
+                      key={issue.id} 
+                      position={{lat: Number(issue.location.lat), lng: Number(issue.location.lng)}}
+                      onClick={() => setSelectedIssue(issue)}
+                    />
+                  );
+                })}
+                {selectedIssue && !isNaN(selectedIssue.location?.lat) && (
+                  <InfoWindowF
+                    position={{lat: Number(selectedIssue.location.lat), lng: Number(selectedIssue.location.lng)}}
+                    onCloseClick={() => setSelectedIssue(null)}
+                  >
+                    <div>
+                      <strong>{selectedIssue.title}</strong><br />
+                      Status: {selectedIssue.status}<br />
+                      <img src={selectedIssue.image} alt="Report" style={{ width: '100px', height: 'auto', marginTop: '5px', borderRadius: '4px' }} />
+                    </div>
+                  </InfoWindowF>
+                )}
+              </GoogleMap>
+            ) : <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>Loading Map...</div>}
           </div>
         </div>
 
@@ -64,7 +96,7 @@ const IssueTracker = () => {
                return (
                 <div key={issue.id} style={{ padding: '1rem', border: '1px solid #eee', borderRadius: '12px', background: 'var(--bg-dark)' }}>
                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>{issue.title}</h4>
-                  <p style={{ margin: '5px 0 10px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>📍 {issue.location.text} • {issue.category}</p>
+                  <p style={{ margin: '5px 0 10px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>📍 {issue.location?.text || 'Unknown Location'} • {issue.category}</p>
                   
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: issue.status === 'Resolved' ? '#e8f5e9' : '#fff3e0', color: issue.status === 'Resolved' ? 'var(--primary-forest)' : '#f57c00', fontWeight: 'bold' }}>

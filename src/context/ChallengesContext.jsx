@@ -6,17 +6,17 @@ const ChallengesContext = createContext();
 export const useChallenges = () => useContext(ChallengesContext);
 
 export const ChallengesProvider = ({ children }) => {
-  const { addXP } = useAuth();
+  const { awardXPByUsername } = useAuth();
   
   const [challenges, setChallenges] = useState(() => {
     const saved = localStorage.getItem('ecospark_challenges');
     if (saved) return JSON.parse(saved);
     
     return [
-      { id: 'c1', title: 'Zero Waste Day', type: 'Daily', category: 'Zero Waste', xp: 50, activeParticipants: 120, joined: false, completed: false },
-      { id: 'c2', title: 'Plant a Seedling', type: 'Weekly', category: 'Lifestyle', xp: 200, activeParticipants: 45, joined: false, completed: false },
-      { id: 'c3', title: 'Carpool to School', type: 'Daily', category: 'Energy', xp: 30, activeParticipants: 210, joined: false, completed: false },
-      { id: 'c4', title: 'No Plastic Bottles', type: 'Weekly', category: 'Zero Waste', xp: 150, activeParticipants: 300, joined: false, completed: false },
+      { id: 'c1', title: 'Zero Waste Day', type: 'Daily', category: 'Zero Waste', xp: 50, activeParticipants: 120, joined: false, completed: false, pendingValidation: false, submittedBy: null },
+      { id: 'c2', title: 'Plant a Seedling', type: 'Weekly', category: 'Lifestyle', xp: 200, activeParticipants: 45, joined: false, completed: false, pendingValidation: false, submittedBy: null },
+      { id: 'c3', title: 'Carpool to School', type: 'Daily', category: 'Energy', xp: 30, activeParticipants: 210, joined: false, completed: false, pendingValidation: false, submittedBy: null },
+      { id: 'c4', title: 'No Plastic Bottles', type: 'Weekly', category: 'Zero Waste', xp: 150, activeParticipants: 300, joined: false, completed: false, pendingValidation: false, submittedBy: null },
     ];
   });
 
@@ -30,15 +30,26 @@ export const ChallengesProvider = ({ children }) => {
     ));
   };
 
-  const completeChallenge = (id) => {
+  const completeChallenge = (id, username) => {
     const challenge = challenges.find(c => c.id === id);
-    if (!challenge || challenge.completed) return;
+    if (!challenge || challenge.completed || challenge.pendingValidation) return;
     
     setChallenges(challenges.map(c => 
-      c.id === id ? { ...c, completed: true } : c
+      c.id === id ? { ...c, pendingValidation: true, submittedBy: username } : c
+    ));
+  };
+
+  const validateChallenge = (id) => {
+    const challenge = challenges.find(c => c.id === id);
+    if (!challenge || !challenge.pendingValidation) return;
+
+    setChallenges(challenges.map(c => 
+      c.id === id ? { ...c, pendingValidation: false, completed: true } : c
     ));
     
-    addXP(challenge.xp);
+    if (challenge.submittedBy) {
+       awardXPByUsername(challenge.submittedBy, challenge.xp);
+    }
   };
 
   const createMission = (mission) => {
@@ -54,7 +65,7 @@ export const ChallengesProvider = ({ children }) => {
   };
 
   return (
-    <ChallengesContext.Provider value={{ challenges, joinChallenge, completeChallenge, createMission }}>
+    <ChallengesContext.Provider value={{ challenges, joinChallenge, completeChallenge, validateChallenge, createMission }}>
       {children}
     </ChallengesContext.Provider>
   );

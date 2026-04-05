@@ -145,8 +145,28 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  const awardXPByUsername = (username, amount) => {
+    // This allows another user to validate and award XP to the original submitter
+    setUsersDB(db => db.map(u => {
+      if (u.username === username) {
+        const currentXP = Number(u.xp) || 0;
+        const newXP = currentXP + amount;
+        const newLevel = Math.floor(newXP / 100) + 1;
+        // Optionally add a notification to the target user
+        const newNotifications = [{id: Date.now().toString(), text: `🎉 A community member verified your mission! You earned ${amount} XP.`, read: false}, ...(u.notifications || [])];
+        return { ...u, xp: newXP, level: newLevel, notifications: newNotifications };
+      }
+      return u;
+    }));
+    
+    // If the target user is the currently logged in user (edge case), update them too
+    if (user && user.username === username) {
+       addXP(amount);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, signup, login, logout, addXP, unlockBadge, healPet, damagePet, pushNotification, markNotificationsRead }}>
+    <AuthContext.Provider value={{ user, signup, login, logout, addXP, awardXPByUsername, unlockBadge, healPet, damagePet, pushNotification, markNotificationsRead }}>
       {children}
     </AuthContext.Provider>
   );

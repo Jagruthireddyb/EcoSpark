@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ReportIssue = () => {
   const { reportIssue } = useIssues();
-  const { addXP } = useAuth();
+  const { user, addXP } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -13,6 +13,8 @@ const ReportIssue = () => {
     title: '',
     category: '',
     locationText: '',
+    lat: null,
+    lng: null,
     severity: 'Medium',
     image: null
   });
@@ -21,19 +23,40 @@ const ReportIssue = () => {
   const [gpsVerified, setGpsVerified] = useState(false);
   const [error, setError] = useState(null);
 
-  const categories = ['Water Waste', 'Waste Management', 'Deforestation', 'Pollution', 'Wildlife Hazard'];
+  const categories = ['Water Waste', 'Waste Management', 'Deforestation', 'Pollution', 'Wildlife Hazard', 'Potholes'];
   
   const handleNext = () => setStep(step + 1);
   const handlePrev = () => setStep(step - 1);
 
-  const handleSimulateGPS = () => {
+  const handleExtractGPS = () => {
     setIsVerifyingGPS(true);
-    // Simulate a 2 second GPS metadata check to prevent location spoofing
-    setTimeout(() => {
+    
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
       setIsVerifyingGPS(false);
-      setGpsVerified(true);
-      setFormData({ ...formData, locationText: 'Detected: School Courtyard (Lat: 28.61, Lng: 77.20)' });
-    }, 2000);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setGpsVerified(true);
+        setIsVerifyingGPS(false);
+        setFormData({ 
+          ...formData, 
+          lat: lat,
+          lng: lng,
+          locationText: `Detected Coordinates: Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}` 
+        });
+      },
+      (geoError) => {
+        setIsVerifyingGPS(false);
+        setError("Unable to retrieve your location. Please check browser permissions.");
+        console.error(geoError);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const handleSubmit = (e) => {
@@ -46,10 +69,10 @@ const ReportIssue = () => {
       reportIssue({
         title: formData.title,
         category: formData.category,
-        location: { lat: 28.6139, lng: 77.2090, text: formData.locationText },
+        location: { lat: formData.lat || 28.6139, lng: formData.lng || 77.2090, text: formData.locationText },
         severity: formData.severity,
         image: formData.image || 'https://images.unsplash.com/photo-1542385151-efd55734c76b?w=400',
-        reportedBy: 'CurrentUser'
+        reportedBy: user ? user.username : 'Guest'
       });
 
       addXP(50); // Reward for reporting
@@ -85,21 +108,51 @@ const ReportIssue = () => {
             <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Step 1: Upload Photo</h3>
             <p className="text-muted" style={{ marginBottom: '1.5rem' }}>A verifiable photo is required to prevent spam and abuse.</p>
             
-            <div style={{ 
+            <label style={{ 
                 border: '2px dashed #ccc', 
                 borderRadius: '16px', 
                 padding: '4rem 2rem', 
                 textAlign: 'center', 
                 cursor: 'pointer', 
+                display: 'block',
                 background: formData.image ? '#e8f5e9' : 'transparent',
-                transition: 'all 0.2s'
-              }}
-              onClick={() => setFormData({ ...formData, image: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=400' })}>
-              <span style={{ fontSize: '2rem', display: 'block', marginBottom: '1rem' }}>📷</span>
-              <span style={{ fontWeight: 600, color: formData.image ? 'var(--primary-forest)' : 'var(--text-main)' }}>
-                {formData.image ? 'Photo Selected! Tap to change.' : 'Tap to capture or upload photo'}
-              </span>
-            </div>
+                transition: 'all 0.2s',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+              <input 
+                 type="file" 
+                 accept="image/*" 
+                 className="hidden-file-input" 
+                 style={{ display: 'none' }}
+                 onChange={(e) => {
+                   const file = e.target.files[0];
+                   if (file) {
+                     const reader = new FileReader();
+                     reader.onloadend = () => {
+                       setFormData({ ...formData, image: reader.result });
+                     };
+                     reader.readAsDataURL(file);
+                   }
+                 }}
+              />
+              
+              {formData.image ? (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                  <img src={formData.image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(255,255,255,0.9)', padding: '10px 20px', borderRadius: '50px', fontWeight: 'bold', color: 'var(--primary-forest)' }}>
+                    Change Photo
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <span style={{ fontSize: '2rem', display: 'block', marginBottom: '1rem' }}>📷</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                    Tap to capture or upload photo
+                  </span>
+                </>
+              )}
+            </label>
             
             <button className="btn btn-primary" style={{ marginTop: '2rem', width: '100%', padding: '16px' }} onClick={handleNext} disabled={!formData.image}>
               Continue to Step 2
@@ -115,7 +168,7 @@ const ReportIssue = () => {
             {!gpsVerified ? (
               <button 
                 className="btn" 
-                onClick={handleSimulateGPS} 
+                onClick={handleExtractGPS} 
                 disabled={isVerifyingGPS}
                 style={{ 
                   width: '100%', 
@@ -125,7 +178,7 @@ const ReportIssue = () => {
                   justifyContent: 'center'
                 }}
               >
-                {isVerifyingGPS ? 'Scanning Metadata...' : 'Extract & Verify Location'}
+                {isVerifyingGPS ? 'Acquiring GPS Signal...' : 'Extract & Verify Live Location'}
               </button>
             ) : (
               <div style={{ padding: '1.5rem', background: '#e8f5e9', color: 'var(--primary-forest)', borderRadius: '12px', fontWeight: 600, border: '1px solid #c8e6c9' }}>

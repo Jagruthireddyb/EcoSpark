@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useChallenges } from '../context/ChallengesContext';
+import { useAuth } from '../context/AuthContext';
 
 const badgeColors = {
   'BEGINNER': '#11c03b',
@@ -8,7 +9,8 @@ const badgeColors = {
 };
 
 const Challenges = () => {
-  const { challenges, joinChallenge, completeChallenge, createMission } = useChallenges();
+  const { challenges, joinChallenge, completeChallenge, validateChallenge, createMission } = useChallenges();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('All Missions');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -198,9 +200,35 @@ const Challenges = () => {
                       <div style={{ textAlign: 'center', fontWeight: 'bold', color: 'var(--primary-teal)', padding: '14px' }}>
                         ✅ Mission Accomplished
                       </div>
+                    ) : c.pendingValidation ? (
+                      user?.username === c.submittedBy ? (
+                        <div style={{ textAlign: 'center', fontWeight: 'bold', color: '#e65100', padding: '14px', background: '#fff3e0', borderRadius: '16px' }}>
+                          ⏳ Pending Community Validation...
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => validateChallenge(c.id)}
+                          style={{ 
+                            width: '100%', 
+                            padding: '14px', 
+                            borderRadius: '16px', 
+                            border: 'none', 
+                            fontWeight: 700, 
+                            fontSize: '1rem',
+                            background: `#8e44ad`, 
+                            color: '#fff',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 14px rgba(0,0,0,0.1)'
+                          }}>
+                          Validate User's Submission!
+                        </button>
+                      )
                     ) : (
                       <button 
-                        onClick={() => completeChallenge(c.id)}
+                        onClick={() => {
+                          if (!user) return alert("Please login to complete missions");
+                          completeChallenge(c.id, user.username);
+                        }}
                         style={{ 
                           width: '100%', 
                           padding: '14px', 
@@ -213,7 +241,7 @@ const Challenges = () => {
                           cursor: 'pointer',
                           boxShadow: '0 4px 14px rgba(0,0,0,0.1)'
                         }}>
-                        Validate & Complete
+                        Complete (Needs Validation)
                       </button>
                     )}
                   </div>

@@ -6,12 +6,12 @@ const Leaderboard = () => {
 
   // Premium Mock Data matching the design
   const leaderData = [
-    { rank: 1, name: 'Marcus V.', role: 'ECO OVERLORD', level: 24, xp: 1240, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&fit=crop', color: '#1B5E20' },
-    { rank: 2, name: 'Sarah J.', role: 'SILVER GUARDIAN', level: 21, xp: 892, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&fit=crop', color: '#007AFF' },
-    { rank: 3, name: 'Elena Ro.', role: 'BRONZE PATHMAKER', level: 19, xp: 755, avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&fit=crop', color: '#E65100' },
-    { rank: 4, name: 'Liam Thorne', role: 'SUSTAINABILITY LEAD', level: 18, xp: 712, avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&fit=crop', color: '#10B981' },
-    { rank: 5, name: 'Aria Moon', role: 'COMMUNITY CATALYST', level: 15, xp: 698, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop', color: '#6366F1' },
-    { rank: 6, name: 'Ken Tanaka', role: 'NATURE ADVOCATE', level: 14, xp: 645, avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&fit=crop', color: '#F59E0B' },
+    { rank: 1, name: 'Aarav P.', role: 'ECO OVERLORD', level: 24, xp: 1240, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=AaravP&backgroundColor=b6e3f4', color: '#1B5E20' },
+    { rank: 2, name: 'Priya K.', role: 'SILVER GUARDIAN', level: 21, xp: 892, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PriyaK&backgroundColor=ffdfbf', color: '#007AFF' },
+    { rank: 3, name: 'Rohan S.', role: 'BRONZE PATHMAKER', level: 19, xp: 755, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=RohanS&backgroundColor=c0aede', color: '#E65100' },
+    { rank: 4, name: 'Sneha Reddy', role: 'SUSTAINABILITY LEAD', level: 18, xp: 712, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SnehaR&backgroundColor=ffdfbf', color: '#10B981' },
+    { rank: 5, name: 'Aditya V.', role: 'COMMUNITY CATALYST', level: 15, xp: 698, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aditya&backgroundColor=b6e3f4', color: '#6366F1' },
+    { rank: 6, name: 'Meera Desai', role: 'NATURE ADVOCATE', level: 14, xp: 645, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Meera&backgroundColor=ffeb3b', color: '#F59E0B' },
   ];
 
   // Insert current user into the list safely if not admin

@@ -30,7 +30,8 @@ const Profile = () => {
         setInstallMessage('Installation manually cancelled.');
       }
     } else {
-      setInstallMessage("App is already installed or browser blocked the prompt.");
+      // Provide actionable fallback instructions for iOS Safari and browsers the block the prompt
+      setInstallMessage("To install manually: tap your browser's menu (⋮) or Share icon, then select 'Add to Home Screen'.");
     }
   };
 
