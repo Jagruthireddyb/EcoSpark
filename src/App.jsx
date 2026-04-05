@@ -14,6 +14,7 @@ import Challenges from './pages/Challenges';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import AuthorityDashboard from './pages/AuthorityDashboard';
+import Rewards from './pages/Rewards';
 
 const AppRoutes = () => {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ const AppRoutes = () => {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/authority" element={<AuthorityDashboard />} />
+            <Route path="/rewards" element={<Rewards />} />
             <Route path="/" element={<Navigate to={user?.role === 'authority' ? '/authority' : '/dashboard'} replace />} />
             <Route path="*" element={<Navigate to={user?.role === 'authority' ? '/authority' : '/dashboard'} replace />} />
           </Routes>

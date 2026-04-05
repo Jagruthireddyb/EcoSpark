@@ -36,6 +36,32 @@ const Profile = () => {
 
   if (!user) return <div style={{ padding: '2rem' }}>Please log in to view your profile.</div>;
 
+  if (user.role === 'authority') {
+    return (
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <header style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ fontSize: '3rem', color: 'var(--primary-forest)' }}>Authority Profile</h1>
+        </header>
+
+        <div className="glass-panel" style={{ background: '#fff', textAlign: 'center', padding: '4rem' }}>
+            <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--accent-brown)', color: '#fff', fontSize: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontWeight: 'bold', boxShadow: 'var(--shadow-md)' }}>
+              {user.username.charAt(0).toUpperCase()}
+            </div>
+            <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{user.username}</h2>
+            <p className="text-muted" style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>{user.email}</p>
+            <div style={{ display: 'inline-block', background: '#e8eaf6', color: '#3f51b5', padding: '12px 24px', borderRadius: '50px', fontWeight: 'bold', fontSize: '1.1rem' }}>
+              🛠 Administrator Dashboard
+            </div>
+            
+            <div style={{ marginTop: '3rem', textAlign: 'left', background: 'var(--bg-dark)', padding: '2rem', borderRadius: '16px' }}>
+              <h3 style={{ marginBottom: '1rem' }}>System Status</h3>
+              <p style={{ color: 'var(--text-muted)' }}>As an authority, your profile does not track XP, habits, or badges. Use the <strong>Authority Deck</strong> to process user-reported issues.</p>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
   const completedCount = challenges.filter(c => c.completed).length;
 
   return (

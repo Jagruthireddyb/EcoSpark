@@ -31,14 +31,16 @@ const Landing = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      width: '100vw',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'url("https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=2000&q=80") center/cover fixed',
-      position: 'relative'
-    }}>
+    <div style={{ width: '100vw', overflowX: 'hidden' }}>
+      {/* Hero Section */}
+      <div style={{
+        minHeight: '100vh',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'url("https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=2000&q=80") center/cover fixed',
+        position: 'relative'
+      }}>
       {/* Dark Overlay */}
       <div style={{
         position: 'absolute',
@@ -91,9 +93,9 @@ const Landing = () => {
               <Link to="/auth" className="btn btn-primary" style={{ padding: '16px 36px', fontSize: '1.1rem' }}>
                 Join the Movement &rarr;
               </Link>
-              <button className="btn btn-secondary" style={{ padding: '16px 36px', fontSize: '1.1rem' }}>
+              <a href="#impact" className="btn btn-secondary" style={{ padding: '16px 36px', fontSize: '1.1rem', textDecoration: 'none' }}>
                 ▶ Explore Impact
-              </button>
+              </a>
             </div>
 
             {showPWA && (
@@ -134,6 +136,116 @@ const Landing = () => {
           
         </div>
       </main>
+      </div>
+
+      {/* Impact Section */}
+      <div id="impact" style={{ 
+        minHeight: '80vh', 
+        background: 'var(--bg-dark)', 
+        padding: '6rem 10%', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <h2 style={{ fontSize: '3rem', color: 'var(--primary-forest)', marginBottom: '1rem', fontFamily: 'Montserrat', textAlign: 'center' }}>Global Impact Dashboard</h2>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '4rem', textAlign: 'center', maxWidth: '600px' }}>
+          Explore the real-world difference our community is making across the globe in real-time. Join today to add your spark.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem', width: '100%', marginBottom: '4rem' }}>
+          {[
+            { value: '12,450+', label: 'Issues Resolved', icon: '✅' },
+            { value: '8,900 Kg', label: 'Waste Audited', icon: '♻️' },
+            { value: '540', label: 'Active Neighborhoods', icon: '📍' },
+            { value: '450', label: 'Live Sparks', icon: '⚡' }
+          ].map((stat, i) => (
+            <div key={i} className="glass-panel" style={{ background: '#fff', padding: '2rem', textAlign: 'center', borderRadius: '24px', boxShadow: 'var(--shadow-md)' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{stat.icon}</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary-teal)', fontFamily: 'Montserrat' }}>{stat.value}</div>
+              <div style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 600, marginTop: '0.5rem' }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Detailed Insights Below Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', width: '100%', flexWrap: 'wrap' }}>
+          {/* Monthly Goals */}
+          <div className="glass-panel" style={{ background: '#fff', padding: '2.5rem', borderRadius: '24px', boxShadow: 'var(--shadow-md)' }}>
+            <h3 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '1.5rem', fontFamily: 'Montserrat' }}>Monthly Progress</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>We work with local authorities to set ambitious sustainability goals every month. Here is where the community stands:</p>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 600 }}>
+                <span>Plastic Waste Recovered</span>
+                <span style={{ color: 'var(--primary-teal)' }}>85%</span>
+              </div>
+              <div style={{ width: '100%', height: '12px', background: '#e0f2f1', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ width: '85%', height: '100%', background: 'var(--primary-teal)', borderRadius: '10px' }}></div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 600 }}>
+                <span>Parks Cleaned</span>
+                <span style={{ color: 'var(--action-blue)' }}>62%</span>
+              </div>
+              <div style={{ width: '100%', height: '12px', background: '#e3f2fd', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ width: '62%', height: '100%', background: 'var(--action-blue)', borderRadius: '10px' }}></div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontWeight: 600 }}>
+                <span>Water Leaks Fixed</span>
+                <span style={{ color: 'var(--accent-brown)' }}>95%</span>
+              </div>
+              <div style={{ width: '100%', height: '12px', background: '#efebe9', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ width: '95%', height: '100%', background: 'var(--accent-brown)', borderRadius: '10px' }}></div>
+              </div>
+            </div>
+            
+            <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8f9fa', borderRadius: '12px', borderLeft: '4px solid var(--primary-forest)' }}>
+              <strong>Did you know?</strong> Every verified report awards you XP and automatically escalates to local authorities when verified 3 times!
+            </div>
+          </div>
+
+          {/* Recent Community Wins */}
+          <div className="glass-panel" style={{ background: '#fff', padding: '2.5rem', borderRadius: '24px', boxShadow: 'var(--shadow-md)' }}>
+            <h3 style={{ fontSize: '1.8rem', color: 'var(--text-main)', marginBottom: '1.5rem', fontFamily: 'Montserrat' }}>Recent Community Wins</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--bg-dark)', padding: '1rem', borderRadius: '16px' }}>
+                <img src="https://images.unsplash.com/photo-1542385151-efd55734c76b?w=100" alt="Fixed Pipe" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+                <div>
+                   <div style={{ color: 'var(--primary-forest)', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>Water Waste • Resolved</div>
+                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>Leaking Pipe fixed in Block B</h4>
+                   <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fixed 2 days ago</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--bg-dark)', padding: '1rem', borderRadius: '16px' }}>
+                <img src="https://images.unsplash.com/photo-1595278069441-2f29f7f35913?w=100" alt="Cleaned Park" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '12px' }} />
+                <div>
+                   <div style={{ color: 'var(--primary-teal)', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>Waste Mgmt • Solved</div>
+                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>Central Park cleanup squad</h4>
+                   <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Fixed 5 days ago</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--bg-dark)', padding: '1rem', borderRadius: '16px' }}>
+                <div style={{ width: '80px', height: '80px', background: '#ffe0b2', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '2rem', borderRadius: '12px' }}>💡</div>
+                <div>
+                   <div style={{ color: '#e65100', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px' }}>Energy • Progressing</div>
+                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>Solar panel installations</h4>
+                   <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>45% of neighborhood covered</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

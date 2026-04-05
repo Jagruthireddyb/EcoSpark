@@ -14,11 +14,12 @@ const TopNav = () => {
     { name: 'Map Tracker', path: '/tracker' },
     { name: 'Reporting', path: '/report' },
     { name: 'Leaderboard', path: '/leaderboard' },
+    { name: 'Rewards', path: '/rewards' },
   ];
 
   const isAuthority = user?.role === 'authority';
   const displayLinks = isAuthority
-    ? [{ name: 'Authority Deck', path: '/authority' }, { name: 'Issue Feed', path: '/dashboard' }]
+    ? [{ name: 'Authority Deck', path: '/authority' }]
     : navLinks;
 
   const unreadCount = user?.notifications?.filter(n => !n.read).length || 0;
@@ -89,19 +90,21 @@ const TopNav = () => {
         {/* User Stats & Profile elements */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
           
-          <div style={{
-            background: '#e8f5e9',
-            color: 'var(--primary-forest)',
-            padding: '6px 16px',
-            borderRadius: '50px',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-            Level {user?.level || 1} • {user?.xp || 0} pts
-          </div>
+          {!isAuthority && (
+            <div style={{
+              background: '#e8f5e9',
+              color: 'var(--primary-forest)',
+              padding: '6px 16px',
+              borderRadius: '50px',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              Level {user?.level || 1} • {user?.xp || 0} pts
+            </div>
+          )}
           
           {/* Notifications Bell */}
           <div style={{ position: 'relative' }}>
