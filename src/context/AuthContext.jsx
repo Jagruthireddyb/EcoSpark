@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '../api/auth';
 
 const AuthContext = createContext();
 
@@ -10,11 +11,7 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [usersDB, setUsersDB] = useState(() => {
-    const saved = localStorage.getItem('ecospark_users');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  // Keep session in sync with localStorage
   useEffect(() => {
     if (user) {
       localStorage.setItem('ecospark_session', JSON.stringify(user));
@@ -22,10 +19,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('ecospark_session');
     }
   }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem('ecospark_users', JSON.stringify(usersDB));
-  }, [usersDB]);
 
   const pushNotification = (userId, message) => {
     setUsersDB(db => db.map(u => u.id === userId ? { 
@@ -53,46 +46,56 @@ export const AuthProvider = ({ children }) => {
     } : u));
   };
 
-  const signup = (username, email, password, role = 'student') => {
-    if (usersDB.find(u => u.email === email)) {
-      throw new Error('Email already in use.');
-    }
-    const newUser = {
-      id: Date.now().toString(),
-      username,
+  // Map API role names to frontend role names
+  const mapRole = (apiRole) => {
+    if (apiRole === 'AUTHORITY') return 'authority';
+    return 'student';
+  };
+
+  /**
+   * signup — calls POST /auth/register then auto-logs in
+   * role: 'student' (maps to USER) or 'authority' (maps to AUTHORITY)
+   */
+  const signup = async (username, email, password, role = 'student') => {
+    const apiRole = role === 'authority' ? 'AUTHORITY' : 'USER';
+    // Register on backend
+    await authAPI.register(email, password, apiRole);
+    // Auto-login after registration
+    await login(email, password);
+  };
+
+  /**
+   * login — calls POST /auth/login and stores user in state
+   */
+  const login = async (email, password) => {
+    // Get JWT token
+    await authAPI.login(email, password);
+
+    // Build a minimal user object from the token payload
+    // (In production you'd call a /me endpoint — backend doesn't have one yet,
+    //  so we decode the JWT payload ourselves.)
+    const token = localStorage.getItem('access_token');
+    const payload = JSON.parse(atob(token.split('.')[1]));
+
+    const loggedInUser = {
+      id: payload.sub,
       email,
-      password, // Note: plain text for prototyping only
-      role,
-      xp: 120,
-      level: 2,
+      role: payload.role ? mapRole(payload.role) : 'student',
+      xp: 0,
+      level: 1,
       petHealth: 100,
       streak: 1,
       badges: ['Eco Starter'],
-      notifications: [{id: 'n1', text: 'Welcome to Eco Spark!', read: false}]
+      notifications: [{ id: 'n1', text: 'Welcome to Eco Spark!', read: false }],
     };
-    setUsersDB([...usersDB, newUser]);
-    
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
+
+    setUser(loggedInUser);
   };
 
-  const login = (email, password) => {
-    const existingUser = usersDB.find(u => u.email === email && u.password === password);
-    if (!existingUser) {
-      throw new Error('Invalid email or password.');
-    }
-    
-    // Polyfill new attributes for old mock users
-    existingUser.petHealth = existingUser.petHealth || 100;
-    existingUser.streak = existingUser.streak || 1;
-    existingUser.notifications = existingUser.notifications || [];
-
-    const { password: _, ...userWithoutPassword } = existingUser;
-    setUser(userWithoutPassword);
-    pushNotification(existingUser.id, 'Welcome back! Your Eco-Pet missed you.');
+  const logout = () => {
+    authAPI.logout();
+    setUser(null);
   };
-
-  const logout = () => setUser(null);
 
   const healPet = (amount) => {
     if (!user) return;

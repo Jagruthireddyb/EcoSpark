@@ -16,22 +16,30 @@ const Auth = () => {
   });
   const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     try {
       if (isLogin) {
-        login(formData.email, formData.password);
-        // Navigate handled natively by App.jsx or forcefully here
+        await login(formData.email, formData.password);
+        
+        // Verify role matches the selected tab
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const userRole = payload.role; // 'USER' or 'AUTHORITY'
+          const selectedRole = authRole === 'authority' ? 'AUTHORITY' : 'USER';
+          
+          if (userRole !== selectedRole) {
+            throw new Error(`This account is not registered as a ${authRole}. Please use the correct tab or create a new account.`);
+          }
+        }
       } else {
         if(!formData.username || !formData.email || !formData.password) {
           throw new Error("Please fill out all fields");
         }
-        signup(formData.username, formData.email, formData.password, authRole);
+        await signup(formData.username, formData.email, formData.password, authRole);
       }
-      
-      // Note: Admin redirection should happen in App.jsx via user role observation,
-      // but just to be safe, we will forcefully ping dashboard which triggers App.jsx routing logic.
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);

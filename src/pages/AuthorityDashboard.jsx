@@ -4,16 +4,32 @@ import { useIssues } from '../context/IssuesContext';
 const AuthorityDashboard = () => {
   const { issues, updateIssueStatus } = useIssues();
   const [unblurImageIds, setUnblurImageIds] = useState([]);
+  const [resolving, setResolving] = useState(null);
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   // Loophole: Content Moderation. Assume some tag or chance blurred it until clicked.
   // For demo, we just add a "Content Warning" overlay to the first image.
   
-  const handleResolve = (id) => {
-    updateIssueStatus(id, 'Resolved');
+  const handleResolve = async (id) => {
+    setResolving(id);
+    try {
+      await updateIssueStatus(id, 'Resolved');
+    } catch (err) {
+      console.error('Failed to resolve issue:', err);
+    } finally {
+      setResolving(null);
+    }
   };
 
   const handleUnblur = (id) => {
     setUnblurImageIds([...unblurImageIds, id]);
+  };
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith('http')) return imagePath;
+    return `${API_BASE_URL}${imagePath}`;
   };
 
   return (
@@ -47,17 +63,41 @@ const AuthorityDashboard = () => {
 
               {/* Moderated Image View */}
               <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem', background: 'var(--bg-dark)' }}>
-                <img 
-                  src={issue.image} 
-                  alt="Issue Proof" 
+                {issue.image ? (
+                  <img 
+                    src={getImageUrl(issue.image)} 
+                    alt="Issue Proof" 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover',
+                      filter: isBlurred ? 'blur(15px)' : 'none',
+                      transition: 'filter 0.3s'
+                    }} 
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                
+                <div 
                   style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover',
-                    filter: isBlurred ? 'blur(15px)' : 'none',
-                    transition: 'filter 0.3s'
-                  }} 
-                />
+                    position: 'absolute', 
+                    top: 0, 
+                    left: 0, 
+                    right: 0, 
+                    bottom: 0, 
+                    background: '#e0e0e0',
+                    display: issue.image ? 'none' : 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    color: '#999',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  No image available
+                </div>
                 
                 {isBlurred && (
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#fff' }}>
@@ -76,7 +116,17 @@ const AuthorityDashboard = () => {
                 </div>
                 
                 {issue.status !== 'Resolved' && (
-                  <button className="btn-primary" onClick={() => handleResolve(issue.id)}>Mark Resolved</button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => handleResolve(issue.id)}
+                    disabled={resolving === issue.id}
+                    style={{
+                      background: resolving === issue.id ? '#ccc' : 'var(--action-blue)',
+                      cursor: resolving === issue.id ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {resolving === issue.id ? 'Resolving...' : 'Mark Resolved'}
+                  </button>
                 )}
               </div>
             </div>

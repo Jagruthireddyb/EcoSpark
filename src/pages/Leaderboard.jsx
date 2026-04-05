@@ -1,31 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { leaderboardAPI } from '../api/leaderboard';
+
+const ROLE_LABELS = ['ECO-PIONEER', 'NATURE ADVOCATE', 'COMMUNITY CATALYST', 'SUSTAINABILITY LEAD', 'BRONZE PATHMAKER', 'SILVER GUARDIAN', 'ECO OVERLORD'];
+const COLORS = ['#10B981', '#F59E0B', '#6366F1', '#10B981', '#E65100', '#007AFF', '#1B5E20'];
+const AVATARS = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&fit=crop',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&fit=crop',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&fit=crop',
+  'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&fit=crop',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop',
+  'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&fit=crop',
+  'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&fit=crop',
+];
 
 const Leaderboard = () => {
   const { user } = useAuth();
+  const [leaderData, setLeaderData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Premium Mock Data matching the design
-  const leaderData = [
-    { rank: 1, name: 'Marcus V.', role: 'ECO OVERLORD', level: 24, xp: 1240, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&fit=crop', color: '#1B5E20' },
-    { rank: 2, name: 'Sarah J.', role: 'SILVER GUARDIAN', level: 21, xp: 892, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&fit=crop', color: '#007AFF' },
-    { rank: 3, name: 'Elena Ro.', role: 'BRONZE PATHMAKER', level: 19, xp: 755, avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&fit=crop', color: '#E65100' },
-    { rank: 4, name: 'Liam Thorne', role: 'SUSTAINABILITY LEAD', level: 18, xp: 712, avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&fit=crop', color: '#10B981' },
-    { rank: 5, name: 'Aria Moon', role: 'COMMUNITY CATALYST', level: 15, xp: 698, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop', color: '#6366F1' },
-    { rank: 6, name: 'Ken Tanaka', role: 'NATURE ADVOCATE', level: 14, xp: 645, avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&fit=crop', color: '#F59E0B' },
-  ];
+  useEffect(() => {
+    leaderboardAPI.get()
+      .then(data => {
+        // data is already parsed JSON array of { user_id, email, xp, level, rank }
+        const mapped = data.map((entry, i) => ({
+          rank: entry.rank || i + 1,
+          name: entry.email.split('@')[0],
+          role: ROLE_LABELS[Math.min(i, ROLE_LABELS.length - 1)],
+          level: entry.level,
+          xp: entry.xp,
+          avatar: AVATARS[i % AVATARS.length],
+          color: COLORS[i % COLORS.length],
+          isCurrentUser: user && entry.email === user.email,
+        }));
+        setLeaderData(mapped);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch leaderboard:', err);
+        setLeaderData([]);
+      })
+      .finally(() => setLoading(false));
+  }, [user]);
 
-  // Insert current user into the list safely if not admin
-  if (user && user.role !== 'authority') {
-    leaderData.push({
-      rank: 42,
-      name: user.username,
-      role: 'ECO-PIONEER',
-      level: user.level || 1,
-      xp: user.xp || 0,
-      avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&fit=crop',
-      color: 'var(--primary-teal)',
-      isCurrentUser: true
-    });
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: '4rem', fontSize: '1.2rem', color: 'var(--text-muted)' }}>Loading leaderboard…</div>;
+  }
+
+  if (leaderData.length === 0) {
+    return <div style={{ textAlign: 'center', padding: '4rem', fontSize: '1.2rem', color: 'var(--text-muted)' }}>No leaderboard data yet. Start reporting issues to earn XP!</div>;
   }
 
   const topThree = leaderData.slice(0, 3);

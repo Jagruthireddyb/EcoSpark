@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useIssues } from '../context/IssuesContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import L from 'leaflet';
 
 const ReportIssue = () => {
   const { reportIssue } = useIssues();
   const { addXP } = useAuth();
   const navigate = useNavigate();
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
     category: '',
     locationText: '',
+    latitude: null,
+    longitude: null,
     severity: 'Medium',
-    image: null
+    image: null,
+    imageFile: null
   });
   
   const [isVerifyingGPS, setIsVerifyingGPS] = useState(false);
@@ -26,33 +32,133 @@ const ReportIssue = () => {
   const handleNext = () => setStep(step + 1);
   const handlePrev = () => setStep(step - 1);
 
-  const handleSimulateGPS = () => {
+  // Get real-time location from device GPS
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+
     setIsVerifyingGPS(true);
-    // Simulate a 2 second GPS metadata check to prevent location spoofing
-    setTimeout(() => {
-      setIsVerifyingGPS(false);
-      setGpsVerified(true);
-      setFormData({ ...formData, locationText: 'Detected: School Courtyard (Lat: 28.61, Lng: 77.20)' });
-    }, 2000);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setFormData(prev => ({
+          ...prev,
+          latitude,
+          longitude,
+          locationText: `📍 Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)} (Accuracy: ±${Math.round(accuracy)}m)`
+        }));
+        setIsVerifyingGPS(false);
+        setGpsVerified(true);
+      },
+      (error) => {
+        setIsVerifyingGPS(false);
+        let errorMsg = 'Could not get location. ';
+        if (error.code === error.PERMISSION_DENIED) {
+          errorMsg += 'Please enable location services.';
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          errorMsg += 'Location information is unavailable.';
+        } else if (error.code === error.TIMEOUT) {
+          errorMsg += 'Location request timed out.';
+        }
+        setError(errorMsg);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
   };
 
-  const handleSubmit = (e) => {
+  // Initialize map when step 2 is reached
+  useEffect(() => {
+    if (step === 2 && mapRef.current && !mapInstanceRef.current) {
+      const map = L.map(mapRef.current).setView([28.6139, 77.2090], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Current location marker
+      const currentMarker = L.marker([28.6139, 77.2090], {
+        icon: L.icon({
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+        })
+      }).addTo(map);
+      currentMarker.bindPopup('Default location (28.61°N, 77.21°E)');
+
+      // Click handler to set location
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        
+        // Remove old marker if exists
+        if (mapInstanceRef.current?.selectedMarker) {
+          map.removeLayer(mapInstanceRef.current.selectedMarker);
+        }
+
+        // Add new marker
+        const selectedMarker = L.marker([lat, lng], {
+          icon: L.icon({
+            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            className: 'selected-location-marker'
+          })
+        }).addTo(map);
+        selectedMarker.bindPopup(`Selected: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`).openPopup();
+
+        // Update form data
+        setFormData(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+          locationText: `📍 Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
+        }));
+        setGpsVerified(false); // Mark as manually selected, not GPS
+
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.selectedMarker = selectedMarker;
+        }
+      });
+
+      mapInstanceRef.current = { map, selectedMarker: null };
+    }
+
+    return () => {
+      if (step !== 2 && mapInstanceRef.current?.map) {
+        mapInstanceRef.current.map.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [step]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (!formData.image) {
         throw new Error("Photo is required to prevent fake reports.");
       }
-      
-      reportIssue({
+      if (!formData.latitude || !formData.longitude) {
+        throw new Error("Location is required. Please verify location on the map.");
+      }
+
+      await reportIssue({
         title: formData.title,
         category: formData.category,
-        location: { lat: 28.6139, lng: 77.2090, text: formData.locationText },
+        location: { lat: formData.latitude, lng: formData.longitude, text: formData.locationText },
         severity: formData.severity,
-        image: formData.image || 'https://images.unsplash.com/photo-1542385151-efd55734c76b?w=400',
+        imageFile: formData.imageFile || null,   // real File object for upload
+        image: formData.image,                   // preview URL for UI
         reportedBy: 'CurrentUser'
       });
 
-      addXP(50); // Reward for reporting
+      addXP(50);
       alert('Issue reported successfully! You earned 50 XP.');
       navigate('/tracker');
     } catch (err) {
@@ -94,11 +200,27 @@ const ReportIssue = () => {
                 background: formData.image ? '#e8f5e9' : 'transparent',
                 transition: 'all 0.2s'
               }}
-              onClick={() => setFormData({ ...formData, image: 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=400' })}>
+              onClick={() => document.getElementById('photo-input').click()}>
               <span style={{ fontSize: '2rem', display: 'block', marginBottom: '1rem' }}>📷</span>
               <span style={{ fontWeight: 600, color: formData.image ? 'var(--primary-forest)' : 'var(--text-main)' }}>
                 {formData.image ? 'Photo Selected! Tap to change.' : 'Tap to capture or upload photo'}
               </span>
+              <input
+                id="photo-input"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setFormData({
+                      ...formData,
+                      imageFile: file,
+                      image: URL.createObjectURL(file),
+                    });
+                  }
+                }}
+              />
             </div>
             
             <button className="btn btn-primary" style={{ marginTop: '2rem', width: '100%', padding: '16px' }} onClick={handleNext} disabled={!formData.image}>
@@ -109,33 +231,67 @@ const ReportIssue = () => {
 
         {step === 2 && (
           <div>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Step 2: Location Verification</h3>
-            <p className="text-muted" style={{ marginBottom: '1.5rem' }}>We extract encrypted GPS metadata from the photo to verify your report.</p>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Step 2: Verify Location</h3>
+            <p className="text-muted" style={{ marginBottom: '1.5rem' }}>Use your device's GPS or click on the map to select the exact location of the issue.</p>
             
-            {!gpsVerified ? (
-              <button 
-                className="btn" 
-                onClick={handleSimulateGPS} 
-                disabled={isVerifyingGPS}
-                style={{ 
-                  width: '100%', 
-                  padding: '16px',
-                  background: isVerifyingGPS ? '#ccc' : 'var(--action-blue)',
-                  color: '#fff',
-                  justifyContent: 'center'
-                }}
-              >
-                {isVerifyingGPS ? 'Scanning Metadata...' : 'Extract & Verify Location'}
-              </button>
-            ) : (
-              <div style={{ padding: '1.5rem', background: '#e8f5e9', color: 'var(--primary-forest)', borderRadius: '12px', fontWeight: 600, border: '1px solid #c8e6c9' }}>
-                ✅ Location Verified: {formData.locationText}
+            {/* GPS Button */}
+            <button
+              className="btn"
+              onClick={handleGetCurrentLocation}
+              disabled={isVerifyingGPS}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                marginBottom: '1.5rem',
+                background: isVerifyingGPS ? '#ccc' : '#4CAF50',
+                color: '#fff',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                cursor: isVerifyingGPS ? 'not-allowed' : 'pointer',
+                borderRadius: '8px',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ fontSize: '1.3rem' }}>📍</span>
+              {isVerifyingGPS ? 'Getting Location...' : 'Use Current Location'}
+            </button>
+
+            {/* Status Message */}
+            {gpsVerified && (
+              <div style={{ padding: '1rem', background: '#e8f5e9', color: 'var(--primary-forest)', borderRadius: '12px', fontWeight: 600, border: '1px solid #c8e6c9', marginBottom: '1.5rem' }}>
+                ✅ {formData.locationText}
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '3rem' }}>
+            {/* Map for manual selection */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                Or click on the map below to manually select a location:
+              </p>
+              <div 
+                ref={mapRef}
+                style={{ 
+                  width: '100%', 
+                  height: '350px', 
+                  borderRadius: '12px',
+                  border: '2px solid #e0e0e0'
+                }} 
+              />
+            </div>
+
+            {formData.locationText && !gpsVerified && (
+              <div style={{ padding: '1rem', background: '#e3f2fd', color: '#1976d2', borderRadius: '12px', fontWeight: 600, border: '1px solid #90caf9', marginBottom: '1.5rem' }}>
+                ✓ {formData.locationText}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <button className="btn" style={{ background: '#eee', color: 'var(--text-main)', flex: 1 }} onClick={handlePrev}>Back</button>
-              <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleNext} disabled={!gpsVerified}>Confirm Location</button>
+              <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleNext} disabled={!formData.locationText}>Confirm Location</button>
             </div>
           </div>
         )}
